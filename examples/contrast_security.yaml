@@ -1,0 +1,5 @@
+api:
+  url: https://app.contrastsecurity.com/Contrast
+  user_name: contrast_user
+  api_key: demo
+  service_key: demo

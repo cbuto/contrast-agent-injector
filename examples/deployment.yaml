@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webgoat-deployment
+  labels:
+    app: webgoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webgoat
+  template:
+    metadata:
+      labels:
+        app: webgoat
+      annotations:
+        contrast-agent-injector/language: java
+        contrast-agent-injector/version: latest
+        contrast-agent-injector/enabled: "true"
+        contrast-agent-injector/config: CONTRAST__SERVER__ENVIRONMENT=qa, CONTRAST__SERVER__NAME=webgoat-k8s
+    spec:
+      containers:
+      - name: webgoat
+        image: webgoat/webgoat-8.0
+        ports:
+        - containerPort: 8080

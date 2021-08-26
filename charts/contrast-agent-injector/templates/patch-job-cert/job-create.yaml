@@ -1,0 +1,47 @@
+{{- if not .Values.certManager.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name:  {{ template "contrast-agent-injector.name" . }}-admission-create
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    app: {{ template "contrast-agent-injector.name" $ }}-admission-create
+{{ include "contrast-agent-injector.labels" $ | indent 4 }}
+spec:
+  template:
+    metadata:
+      name:  {{ template "contrast-agent-injector.name" . }}-admission-create
+      labels:
+        app: {{ template "contrast-agent-injector.name" $ }}-admission-create
+{{ include "contrast-agent-injector.labels" $ | indent 8 }}
+    spec:
+      containers:
+        - name: create
+          image: {{ .Values.jobImage.repository }}:{{ .Values.jobImage.tag }}
+          imagePullPolicy: {{ .Values.jobImage.pullPolicy }}
+          args:
+            - create
+            - --host={{ template "contrast-agent-injector.name" . }},{{ template "contrast-agent-injector.name" . }}.{{ .Release.Namespace }}.svc
+            - --namespace={{ .Release.Namespace }}
+            - --secret-name={{ template "contrast-agent-injector.name" . }}-admission
+            - --cert-name=tls.crt
+            - --key-name=tls.key
+          {{- if .Values.jobImage.volumeMounts }}
+          volumeMounts:
+          {{- include "tplvalues.render" ( dict "value" .Values.jobImage.volumeMounts "context" $ ) | nindent 10 }}
+          {{- end }}
+      restartPolicy: Never
+      {{- if .Values.jobImage.volumes }}
+      volumes:
+      {{- include "tplvalues.render" ( dict "value" .Values.jobImage.volumes "context" $ ) | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      serviceAccountName: {{ template "contrast-agent-injector.name" . }}-admission
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 2000
+{{- end }}

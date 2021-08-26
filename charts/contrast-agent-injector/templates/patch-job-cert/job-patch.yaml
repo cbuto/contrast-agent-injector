@@ -1,0 +1,47 @@
+{{- if not .Values.certManager.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name:  {{ template "contrast-agent-injector.name" . }}-admission-patch
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    app: {{ template "contrast-agent-injector.name" $ }}-admission-patch
+{{ include "contrast-agent-injector.labels" $ | indent 4 }}
+spec:
+  template:
+    metadata:
+      name:  {{ template "contrast-agent-injector.name" . }}-admission-patch
+      labels:
+        app: {{ template "contrast-agent-injector.name" $ }}-admission-patch
+{{ include "contrast-agent-injector.labels" $ | indent 8 }}
+    spec:
+      containers:
+        - name: patch
+          image: {{ .Values.jobImage.repository }}:{{ .Values.jobImage.tag }}
+          imagePullPolicy: {{ .Values.jobImage.pullPolicy }}
+          args:
+            - patch
+            - --webhook-name={{ template "contrast-agent-injector.name" . }}
+            - --namespace={{ .Release.Namespace }}
+            - --secret-name={{ template "contrast-agent-injector.name" . }}-admission
+            - --patch-failure-policy=Ignore
+            - --patch-validating=false
+          {{- if .Values.jobImage.volumeMounts }}
+          volumeMounts:
+          {{- include "tplvalues.render" ( dict "value" .Values.jobImage.volumeMounts "context" $ ) | nindent 10 }}
+          {{- end }}
+      restartPolicy: Never
+      {{- if .Values.jobImage.volumes }}
+      volumes:
+      {{- include "tplvalues.render" ( dict "value" .Values.jobImage.volumes "context" $ ) | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      serviceAccountName: {{ template "contrast-agent-injector.name" . }}-admission
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 2000
+{{- end }}

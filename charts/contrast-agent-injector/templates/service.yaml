@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "contrast-agent-injector.name" . }}
+  labels:
+    {{- include "contrast-agent-injector.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: https
+      protocol: TCP
+      name: https
+  selector:
+    {{- include "contrast-agent-injector.selectorLabels" . | nindent 4 }}

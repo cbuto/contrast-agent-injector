@@ -1,0 +1,26 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ template "contrast-agent-injector.name" . }}
+  labels:
+    {{- include "contrast-agent-injector.labels" . | nindent 4 }}
+webhooks:
+- name: contrast-agent.injector.caseybuto.net
+  clientConfig:
+    service:
+      name: {{ template "contrast-agent-injector.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: "/mutate"
+    caBundle: ""
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  namespaceSelector:
+    matchLabels:
+      contrast-agent-injector: enabled
+  failurePolicy: Ignore
+  timeoutSeconds: {{ .Values.webhookTimeoutSeconds }}
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
